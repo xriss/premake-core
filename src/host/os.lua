@@ -10,9 +10,6 @@ os.isdir=function() print("FUNCTION","os."..debug.getinfo(1).name) end
 os.getversion=function() print("FUNCTION","os."..debug.getinfo(1).name) end
 
 os.islink=function() print("FUNCTION","os."..debug.getinfo(1).name) end
-os.matchdone=function() print("FUNCTION","os."..debug.getinfo(1).name) end
-os.matchisfile=function() print("FUNCTION","os."..debug.getinfo(1).name) end
-os.matchname=function() print("FUNCTION","os."..debug.getinfo(1).name) end
 
 
 os.mkdir=function() print("FUNCTION","os."..debug.getinfo(1).name) end
@@ -22,11 +19,55 @@ os.rmdir=function() print("FUNCTION","os."..debug.getinfo(1).name) end
 os.stat=function() print("FUNCTION","os."..debug.getinfo(1).name) end
 os.writefile_ifnotequal=function() print("FUNCTION","os."..debug.getinfo(1).name) end
 
-os.matchstart=function(a)
-	print("FUNCTION","os."..debug.getinfo(1).name,a)
+os.matchstart=function(p)
+	local it={}
+	
+	it.p=p
+	it.pd,it.pf=path._splitpath(p)
+	it.dir_func,it.dir_data=lfs.dir(it.pd)
+
+-- very very simple glob hack, any other special character will messup
+	it.pf=it.pf:gsub("%.","%.")
+	it.pf=it.pf:gsub("%*",".*")
+	it.pf=it.pf:gsub("%?",".")
+
+--	print("FUNCTION","os."..debug.getinfo(1).name,p,it.pd,it.pf)
+		
+	return it
 end
-os.matchnext=function(a)
-	print("FUNCTION","os."..debug.getinfo(1).name,a)
+os.matchdone=function()end
+
+os.matchnext=function(it)
+--	print("FUNCTION","os."..debug.getinfo(1).name,it)
+	
+	it.filename=it.dir_func(it.dir_data)
+	
+	while true do
+
+		if not it.filename then return nil end -- end
+
+		if it.filename:match(it.pf) then return true end -- a match
+	
+	end
+	
+end
+
+os.matchname=function(it)
+
+--	print("FUNCTION","os."..debug.getinfo(1).name,it.pd..it.filename)
+	
+	return it.filename	
+
+end
+
+
+
+os.matchisfile=function(it)
+
+--	print("FUNCTION","os."..debug.getinfo(1).name,it.pd..it.filename,os.isfile( os.matchname(it)))
+	
+	return os.isfile( it.pd..it.filename )
+
 end
 
 os.uuid=function()
@@ -61,20 +102,21 @@ os.isfile=function(a)
 end
 
 
-os.locate=function(a)
+os.locate=function(...)
 
-	if lfs.attributes(a,'mode')=="file" then return a end
-	
-	local r
-	local paths=premake._split(premake.path,";")
-	for i,p in ipairs(paths) do
-		local t=path.normalize(p.."/"..a)
-		if lfs.attributes(t,'mode')=="file" then r=t break end
+	for _,a in ipairs{...} do
+		if lfs.attributes(a,'mode')=="file" then return a end
+		local r
+		local paths=path._split(premake.path,";")
+		for i,p in ipairs(paths) do
+			local t=path.normalize(p.."/"..a)
+			if lfs.attributes(t,'mode')=="file" then r=t break end
+		end
+		if r then return r end
 	end
-
 --	print("FUNCTION","os."..debug.getinfo(1).name,a,r)
 
-	return r
+	return nil
 end
 
 

@@ -24,12 +24,11 @@ criteria._compile=function(ps)
 end
 
 
-criteria.matches=function(a,b)
+criteria.matches=function(crit, context)
 
-	print("FUNCTION","criteria."..debug.getinfo(1).name,a,b)
-	
-	return false
-	
+	print("FUNCTION","criteria."..debug.getinfo(1).name)
+
 end
+
 
 
