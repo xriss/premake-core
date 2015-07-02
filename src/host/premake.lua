@@ -50,8 +50,8 @@ do
 	end
 	table.insert(aa,"/usr/local/share/premake;/usr/share/premake")
 
-	table.insert(aa,_LUA_DIR.."src/")
-	table.insert(aa,_LUA_DIR.."src/host/")
+	table.insert(aa,_LUA_DIR.."src")
+	table.insert(aa,_LUA_DIR.."src/host")
 	
 	premake.path=table.concat(aa,";")
 	if _OS~="windows" then
@@ -75,10 +75,9 @@ for n,v in pairs(premake) do
 end
 
 
-local split = function(str,div,flag)
+premake._split = function(str,div,flag)
 
 	if (str=='') then return {""} end
-	
 	if (div=='') or not div then error("div expected", 2) end
 	if (str=='') or not str then error("str expected", 2) end
 
@@ -101,25 +100,16 @@ end
 
 local _dofile=dofile
 
+_dofile( _LUA_DIR .. "src/host/criteria.lua" )
+_dofile( _LUA_DIR .. "src/host/debug.lua" )
+_dofile( _LUA_DIR .. "src/host/path.lua" )
+_dofile( _LUA_DIR .. "src/host/os.lua" )
+_dofile( _LUA_DIR .. "src/host/string.lua" )
 
 dofile=function(n)
-	local paths=split(premake.path,";")
-	for i,path in ipairs(paths) do
-		if lfs.attributes(path..n,'mode') then
-			return _dofile( path .. n )
-		end
-	end
-	_dofile( _LUA_DIR .. n )
+	return _dofile(os.locate(n) or n)
 end
 
 
-dofile( "src/host/criteria.lua" )
-dofile( "src/host/debug.lua" )
-dofile( "src/host/path.lua" )
-dofile( "src/host/os.lua" )
-dofile( "src/host/string.lua" )
-
-
-dofile( "src/_premake_main.lua" )
-
-
+dofile( _LUA_DIR .. "src/_premake_main.lua" )
+_premake_main()
