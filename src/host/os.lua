@@ -105,11 +105,11 @@ end
 os.locate=function(...)
 
 	for _,a in ipairs{...} do
-		if lfs.attributes(a,'mode')=="file" then return a end
+		if lfs.attributes(a,'mode')=="file" then return path.getabsolute(a) end
 		local r
 		local paths=path._split(premake.path,";")
 		for i,p in ipairs(paths) do
-			local t=path.normalize(p.."/"..a)
+			local t=path.getabsolute(p.."/"..a)
 			if lfs.attributes(t,'mode')=="file" then r=t break end
 		end
 		if r then return r end

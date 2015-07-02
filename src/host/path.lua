@@ -145,7 +145,7 @@ path.normalize=function(a)
 	local n=n:gsub("//","/")
 	local p=path._split(a)
 	local i=1
-	while i<#p do
+	while i<=#p do
 		local v=p[i]
 		if v=="." and i>1 then
 			table.remove(p,i)
