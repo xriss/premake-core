@@ -6,7 +6,10 @@
 
 	local shorthelp     = "Type 'premake5 --help' for help"
 	local versionhelp   = "premake5 (Premake Build Script Generator) %s"
+	local startTime     = os.clock()
 
+-- set a global.
+	_PREMAKE_STARTTIME = startTime
 
 -- Load the collection of core scripts, required for everything else to work
 
@@ -68,6 +71,9 @@
 				if chunk then
 					return chunk
 				end
+				if err then
+					return "\n\tload error " .. err
+				end
 			end
 		end
 
@@ -108,10 +114,9 @@
 			preloader = os.locate("modules/" .. preloader) or os.locate(preloader)
 			if preloader then
 				m._preloaded[name] = include(preloader)
-				-- leave off until existing core modules can catch up
-				-- if not m._preloaded[name] then
-				-- 	p.warn("module '%s' should return function from _preload.lua", name)
-				-- end
+				if not m._preloaded[name] then
+					p.warn("module '%s' should return function from _preload.lua", name)
+				end
 			else
 				require(name)
 			end
@@ -268,8 +273,8 @@
 
 	function m.postBake()
 		local function shouldLoad(func)
-			for sln in p.global.eachSolution() do
-				for prj in p.solution.eachproject(sln) do
+			for wks in p.global.eachWorkspace() do
+				for prj in p.workspace.eachproject(wks) do
 					for cfg in p.project.eachconfig(prj) do
 						if func(cfg) then
 							return true
@@ -326,7 +331,8 @@
 
 	function m.postAction()
 		if p.action.isConfigurable() then
-			print("Done.")
+			local duration = math.floor((os.clock() - startTime) * 1000);
+			printf("Done (%dms).", duration)
 		end
 	end
 

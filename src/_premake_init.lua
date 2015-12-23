@@ -133,6 +133,17 @@
 	}
 
 	api.register {
+		name = "characterset",
+		scope = "config",
+		kind = "string",
+		allowed = {
+			"Default",
+			"MBCS",
+			"Unicode",
+		}
+	}
+
+	api.register {
 		name = "cleancommands",
 		scope = "config",
 		kind = "list:string",
@@ -247,6 +258,17 @@
 			"Default",
 			"GDB",
 			"LLDB",
+		}
+	}
+
+	api.register {
+		name = "debuggertype",
+		scope = "config",
+		kind = "string",
+		allowed = {
+			"Mixed",
+			"NativeOnly",
+			"ManagedOnly",
 		}
 	}
 
@@ -382,6 +404,12 @@
 	}
 
 	api.register {
+		name = "entrypoint",
+		scope = "config",
+		kind = "string",
+	}
+
+	api.register {
 		name = "fatalwarnings",
 		scope = "config",
 		kind = "list:string",
@@ -457,7 +485,7 @@
 			"StaticRuntime",
 			"Symbols",
 			"UndefinedIdentifiers",
-			"Unicode",
+			"Unicode",             -- DEPRECATED
 			"Unsafe",              -- DEPRECATED
 			"WinMain",
 			"WPF",
@@ -480,6 +508,18 @@
 			"Default",
 			"Fast",
 			"Strict",
+		}
+	}
+
+	api.register {
+		name = "inlining",
+		scope = "config",
+		kind = "string",
+		allowed = {
+			"Default",
+			"Disabled",
+			"Explicit",
+			"Auto"
 		}
 	}
 
@@ -520,7 +560,7 @@
 	}
 
 	api.register {
-		name = "framework",
+		name = "dotnetframework",
 		scope = "config",
 		kind = "string",
 	}
@@ -529,6 +569,13 @@
 		name = "gccprefix",
 		scope = "config",
 		kind = "string",
+		tokens = true,
+	}
+
+	api.register {
+		name = "ignoredefaultlibraries",
+		scope = "config",
+		kind = "list:mixed",
 		tokens = true,
 	}
 
@@ -851,7 +898,7 @@
 
 	api.register {
 		name = "startproject",
-		scope = "solution",
+		scope = "workspace",
 		kind = "string",
 		tokens = true,
 	}
@@ -948,6 +995,12 @@
 	}
 
 	api.register {
+		name = "customtoolnamespace",
+		scope = "config",
+		kind = "string",
+	}
+
+	api.register {
 		name = "undefines",
 		scope = "config",
 		kind = "list:string",
@@ -993,6 +1046,9 @@
 			"AVX2",
 			"SSE",
 			"SSE2",
+			"SSE3",
+			"SSSE3",
+			"SSE4.1",
 		}
 	}
 
@@ -1015,6 +1071,11 @@
 		}
 	}
 
+	api.register {
+		name = "largeaddressaware",
+		scope = "config",
+		kind = "boolean",
+	}
 
 -----------------------------------------------------------------------------
 --
@@ -1028,6 +1089,7 @@
 	api.alias("buildoutputs", "buildOutputs")
 	api.alias("cleanextensions", "cleanExtensions")
 	api.alias("configfile", "configFile")
+	api.alias("dotnetframework", "framework")
 	api.alias("editandcontinue", "editAndContinue")
 	api.alias("fileextension", "fileExtension")
 	api.alias("propertydefinition", "propertyDefinition")
@@ -1177,6 +1239,16 @@
 	end,
 	function(value)
 		clr "On"
+	end)
+
+	-- 18 Dec 2015
+
+	api.deprecateValue("flags", "Unicode", nil,
+	function(value)
+		characterset "Unicode"
+	end,
+	function(value)
+		characterset "Default"
 	end)
 
 

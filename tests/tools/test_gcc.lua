@@ -14,10 +14,10 @@
 -- Setup/teardown
 --
 
-	local sln, prj, cfg
+	local wks, prj, cfg
 
 	function suite.setup()
-		sln, prj = test.createsolution()
+		wks, prj = test.createWorkspace()
 		system "Linux"
 	end
 
@@ -259,7 +259,7 @@
 		system "Windows"
 		kind "SharedLib"
 		prepare()
-		test.contains({ "-shared", '-Wl,--out-implib="MyProject.lib"' }, gcc.getldflags(cfg))
+		test.contains({ "-shared", '-Wl,--out-implib="bin/Debug/MyProject.lib"' }, gcc.getldflags(cfg))
 	end
 
 	function suite.ldflags_onWindowsApp()
@@ -345,7 +345,7 @@
 	function suite.links_onStaticSiblingLibrary()
 		links { "MyProject2" }
 
-		test.createproject(sln)
+		test.createproject(wks)
 		system "Linux"
 		kind "StaticLib"
 		targetdir "lib"
@@ -362,7 +362,7 @@
 	function suite.links_onSharedSiblingLibrary()
 		links { "MyProject2" }
 
-		test.createproject(sln)
+		test.createproject(wks)
 		system "Linux"
 		kind "SharedLib"
 		targetdir "lib"

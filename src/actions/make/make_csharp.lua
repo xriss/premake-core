@@ -23,26 +23,28 @@
 -- Generate a GNU make C++ project makefile, with support for the new platforms API.
 --
 
-	cs.elements.makefile = {
-		"header",
-		"phonyRules",
-		"csConfigs",
-		"csProjectConfig",
-		"csSources",
-		"csEmbedFiles",
-		"csCopyFiles",
-		"csResponseFile",
-		"shellType",
-		"csAllRules",
-		"csTargetRules",
-		"targetDirRules",
-		"csResponseRules",
-		"objDirRules",
-		"csCleanRules",
-		"preBuildRules",
-		"preLinkRules",
-		"csFileRules",
-	}
+	cs.elements.makefile = function(prj)
+		return {
+			make.header,
+			make.phonyRules,
+			make.csConfigs,
+			make.csProjectConfig,
+			make.csSources,
+			make.csEmbedFiles,
+			make.csCopyFiles,
+			make.csResponseFile,
+			make.shellType,
+			make.csAllRules,
+			make.csTargetRules,
+			make.targetDirRules,
+			make.csResponseRules,
+			make.objDirRules,
+			make.csCleanRules,
+			make.preBuildRules,
+			make.preLinkRules,
+			make.csFileRules,
+		}
+	end
 
 
 --
@@ -52,7 +54,7 @@
 	function make.cs.generate(prj)
 		premake.eol("\n")
 		local toolset = premake.tools.dotnet
-		premake.callarray(make, cs.elements.makefile, prj, toolset)
+		premake.callArray(cs.elements.makefile, prj, toolset)
 	end
 
 
@@ -60,22 +62,24 @@
 -- Write out the settings for a particular configuration.
 --
 
-	cs.elements.configuration = {
-		"csTools",
-		"target",
-		"objdir",
-		"csFlags",
-		"csLinkCmd",
-		"preBuildCmds",
-		"preLinkCmds",
-		"postBuildCmds",
-		"settings",
-	}
+	cs.elements.configuration = function(cfg)
+		return {
+			make.csTools,
+			make.target,
+			make.objdir,
+			make.csFlags,
+			make.csLinkCmd,
+			make.preBuildCmds,
+			make.preLinkCmds,
+			make.postBuildCmds,
+			make.settings,
+		}
+	end
 
 	function make.csConfigs(prj, toolset)
 		for cfg in project.eachconfig(prj) do
 			_x('ifeq ($(config),%s)', cfg.shortname)
-			premake.callarray(make, cs.elements.configuration, cfg, toolset)
+			premake.callArray(cs.elements.configuration, cfg, toolset)
 			_p('endif')
 			_p('')
 		end
@@ -185,7 +189,7 @@
 		local toolset = premake.tools.dotnet
 		local ext = make.getmakefilename(prj, true)
 		local makefile = path.getname(premake.filename(prj, ext))
-		local response = path.translate(make.cs.getresponsefilename(prj))
+		local response = make.cs.getresponsefilename(prj)
 
 		_p('$(RESPONSE): %s', makefile)
 		_p('\t@echo Generating response file', prj.name)
@@ -193,14 +197,15 @@
 		_p('ifeq (posix,$(SHELLTYPE))')
 			_x('\t$(SILENT) rm -f $(RESPONSE)')
 		_p('else')
-			_x('\t$(SILENT) if exist $(RESPONSE) del %s', response)
+			_x('\t$(SILENT) if exist $(RESPONSE) del %s', path.translate(response, '\\'))
 		_p('endif')
 
+		local sep = os.is("windows") and "\\" or "/"
 		local tr = project.getsourcetree(prj)
 		premake.tree.traverse(tr, {
 			onleaf = function(node, depth)
 				if toolset.fileinfo(node).action == "Compile" then
-					_x('\t@echo %s >> $(RESPONSE)', path.translate(node.relpath))
+					_x('\t@echo %s >> $(RESPONSE)', path.translate(node.relpath, sep))
 				end
 			end
 		})

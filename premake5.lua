@@ -18,7 +18,6 @@
 	premake.api.deprecations "off"
 
 
-
 --
 -- Register supporting actions and options.
 --
@@ -64,6 +63,21 @@
 	}
 
 
+	newoption {
+		trigger = "no-curl",
+		description = "Disable Curl 3rd party lib"
+	}
+
+
+	newoption {
+		trigger = "no-zlib",
+		description = "Disable Zlib/Zip 3rd party lib"
+	}
+
+	newoption {
+		trigger     = "no-bytecode",
+		description = "Don't embed bytecode, but instead use the stripped souce code."
+	}
 
 --
 -- Define the project. Put the release configuration first so it will be the
@@ -77,28 +91,43 @@
 		configurations { "Release", "Debug" }
 		location ( _OPTIONS["to"] )
 
+		configuration { "macosx", "gmake" }
+			buildoptions { "-mmacosx-version-min=10.4" }
+			linkoptions  { "-mmacosx-version-min=10.4" }
+
 	project "Premake5"
 		targetname  "premake5"
 		language    "C"
 		kind        "ConsoleApp"
 		flags       { "No64BitChecks", "ExtraWarnings", "StaticRuntime" }
-		includedirs { "src/host/lua-5.1.4/src" }
+		includedirs { "src/host/lua/src" }
+
+		-- optional 3rd party libraries
+		if not _OPTIONS["no-zlib"] then
+			includedirs { "contrib/zlib", "contrib/libzip" }
+			defines { "PREMAKE_COMPRESSION" }
+			links { "zip-lib", "zlib-lib" }
+		end
+		if not _OPTIONS["no-curl"] then
+			includedirs { "contrib/curl/include" }
+			defines { "CURL_STATICLIB", "PREMAKE_CURL" }
+			links { "curl-lib" }
+		end
 
 		files
 		{
 			"*.txt", "**.lua",
 			"src/**.h", "src/**.c",
-			"src/host/scripts.c"
 		}
 
 		excludes
 		{
-			"src/host/lua-5.1.4/src/lauxlib.c",
-			"src/host/lua-5.1.4/src/lua.c",
-			"src/host/lua-5.1.4/src/luac.c",
-			"src/host/lua-5.1.4/src/print.c",
-			"src/host/lua-5.1.4/**.lua",
-			"src/host/lua-5.1.4/etc/*.c"
+			"src/host/lua/src/lauxlib.c",
+			"src/host/lua/src/lua.c",
+			"src/host/lua/src/luac.c",
+			"src/host/lua/src/print.c",
+			"src/host/lua/**.lua",
+			"src/host/lua/etc/*.c"
 		}
 
 		configuration "Debug"
@@ -114,13 +143,13 @@
 			flags       { "OptimizeSize" }
 
 		configuration "vs*"
-			defines     { "_CRT_SECURE_NO_WARNINGS" }
+			defines     { "_CRT_SECURE_NO_WARNINGS", "_CRT_NONSTDC_NO_WARNINGS" }
 
 		configuration "vs2005"
 			defines	{"_CRT_SECURE_NO_DEPRECATE" }
 
 		configuration "windows"
-			links { "ole32" }
+			links       { "ole32", "ws2_32" }
 
 		configuration "linux or bsd or hurd"
 			defines     { "LUA_USE_POSIX", "LUA_USE_DLOPEN" }
@@ -128,16 +157,22 @@
 			linkoptions { "-rdynamic" }
 
 		configuration "linux or hurd"
-			links       { "dl" }
+			links       { "dl", "rt" }
+
+		configuration "linux"
+			if not _OPTIONS["no-curl"] and os.findlib("ssl") then
+				links       { "ssl", "crypto" }
+			end
 
 		configuration "macosx"
 			defines     { "LUA_USE_MACOSX" }
 			links       { "CoreServices.framework" }
+			if not _OPTIONS["no-curl"] then
+				links   { "Security.framework" }
+			end
 
 		configuration { "macosx", "gmake" }
 			toolset "clang"
-			buildoptions { "-mmacosx-version-min=10.4" }
-			linkoptions  { "-mmacosx-version-min=10.4" }
 
 		configuration { "solaris" }
 			linkoptions { "-Wl,--export-dynamic" }
@@ -146,6 +181,16 @@
 			defines     { "LUA_USE_POSIX", "LUA_USE_DLOPEN" }
 			links       { "m" }
 
+
+	-- optional 3rd party libraries
+	group "contrib"
+		if not _OPTIONS["no-zlib"] then
+			include "contrib/zlib"
+			include "contrib/libzip"
+		end
+		if not _OPTIONS["no-curl"] then
+			include "contrib/curl"
+		end
 
 
 --

@@ -26,26 +26,28 @@
 -- Generate a GNU make C++ project makefile, with support for the new platforms API.
 --
 
-	cpp.elements.makefile = {
-		"header",
-		"phonyRules",
-		"cppConfigs",
-		"cppObjects",
-		"shellType",
-		"cppTargetRules",
-		"targetDirRules",
-		"objDirRules",
-		"cppCleanRules",
-		"preBuildRules",
-		"preLinkRules",
-		"pchRules",
-		"cppFileRules",
-		"cppDependencies",
-	}
+	cpp.elements.makefile = function(prj)
+		return {
+			make.header,
+			make.phonyRules,
+			make.cppConfigs,
+			make.cppObjects,
+			make.shellType,
+			make.cppTargetRules,
+			make.targetDirRules,
+			make.objDirRules,
+			make.cppCleanRules,
+			make.preBuildRules,
+			make.preLinkRules,
+			make.pchRules,
+			make.cppFileRules,
+			make.cppDependencies,
+		}
+	end
 
 	function make.cpp.generate(prj)
 		premake.eol("\n")
-		premake.callarray(make, cpp.elements.makefile, prj)
+		premake.callArray(cpp.elements.makefile, prj)
 	end
 
 
@@ -53,28 +55,30 @@
 -- Write out the settings for a particular configuration.
 --
 
-	cpp.elements.configuration = {
-		"cppTools",
-		"target",
-		"objdir",
-		"pch",
-		"defines",
-		"includes",
-		"forceInclude",
-		"cppFlags",
-		"cFlags",
-		"cxxFlags",
-		"resFlags",
-		"libs",
-		"ldDeps",
-		"ldFlags",
-		"linkCmd",
-		"preBuildCmds",
-		"preLinkCmds",
-		"postBuildCmds",
-		"cppAllRules",
-		"settings",
-	}
+	cpp.elements.configuration = function(cfg)
+		return {
+			make.cppTools,
+			make.target,
+			make.objdir,
+			make.pch,
+			make.defines,
+			make.includes,
+			make.forceInclude,
+			make.cppFlags,
+			make.cFlags,
+			make.cxxFlags,
+			make.resFlags,
+			make.libs,
+			make.ldDeps,
+			make.ldFlags,
+			make.linkCmd,
+			make.preBuildCmds,
+			make.preLinkCmds,
+			make.postBuildCmds,
+			make.cppAllRules,
+			make.settings,
+		}
+	end
 
 	function make.cppConfigs(prj)
 		for cfg in project.eachconfig(prj) do
@@ -83,11 +87,11 @@
 
 			local toolset = premake.tools[cfg.toolset or "gcc"]
 			if not toolset then
-				error("Invalid toolset '" + cfg.toolset + "'")
+				error("Invalid toolset '" .. cfg.toolset .. "'")
 			end
 
 			_x('ifeq ($(config),%s)', cfg.shortname)
-			premake.callarray(make, cpp.elements.configuration, cfg, toolset)
+			premake.callArray(cpp.elements.configuration, cfg, toolset)
 			_p('endif')
 			_p('')
 		end
@@ -348,7 +352,7 @@
 
 
 	function make.cppTargetRules(prj)
-		_p('$(TARGET): $(GCH) $(OBJECTS) $(LDDEPS) $(RESOURCES) ${CUSTOMFILES}')
+		_p('$(TARGET): $(GCH) ${CUSTOMFILES} $(OBJECTS) $(LDDEPS) $(RESOURCES)')
 		_p('\t@echo Linking %s', prj.name)
 		_p('\t$(SILENT) $(LINKCMD)')
 		_p('\t$(POSTBUILDCMDS)')
@@ -400,7 +404,7 @@
 
 
 	function make.includes(cfg, toolset)
-		local includes = premake.esc(toolset.getincludedirs(cfg, cfg.includedirs, cfg.sysincludedirs))
+		local includes = toolset.getincludedirs(cfg, cfg.includedirs, cfg.sysincludedirs)
 		_p('  INCLUDES +=%s', make.list(includes))
 	end
 
@@ -430,6 +434,9 @@
 			else
 				_p('  LINKCMD = $(AR) -rcs "$@" $(OBJECTS)')
 			end
+		elseif cfg.kind == premake.UTILITY then
+			-- Empty LINKCMD for Utility (only custom build rules)
+			_p('  LINKCMD =')
 		else
 			-- this was $(TARGET) $(LDFLAGS) $(OBJECTS)
 			--   but had trouble linking to certain static libs; $(OBJECTS) moved up

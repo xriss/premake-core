@@ -1,22 +1,30 @@
 --
 -- vs2005_solution.lua
 -- Generate a Visual Studio 2005-2012 solution.
--- Copyright (c) 2009-2013 Jason Perkins and the Premake project
+-- Copyright (c) 2009-2015 Jason Perkins and the Premake project
 --
 
 	premake.vstudio.sln2005 = {}
-	local vstudio = premake.vstudio
-	local sln2005 = premake.vstudio.sln2005
-	local solution = premake.solution
-	local project = premake.project
-	local tree = premake.tree
+
+	local p = premake
+	local vstudio = p.vstudio
+	local sln2005 = p.vstudio.sln2005
+	local project = p.project
+	local tree = p.tree
+
+
+---
+-- Add namespace for element definition lists for premake.callArray()
+---
+
+	sln2005.elements = {}
 
 
 --
 -- Return the list of sections contained in the solution.
 --
 
-	function sln2005.solutionSections(sln)
+	function sln2005.solutionSections(wks)
 		return {
 			"ConfigurationPlatforms",
 			"SolutionProperties",
@@ -29,19 +37,20 @@
 -- Generate a Visual Studio 200x solution, with support for the new platforms API.
 --
 
-	function sln2005.generate(sln)
+	function sln2005.generate(wks)
 		-- Mark the file as Unicode
-		_p('\239\187\191')
+		premake.utf8()
+		premake.outln('')
 
-		sln2005.reorderProjects(sln)
+		sln2005.reorderProjects(wks)
 
 		sln2005.header()
-		sln2005.projects(sln)
+		sln2005.projects(wks)
 
-		_p('Global')
-		sln2005.sections(sln)
-		_p('EndGlobal')
-
+		p.push('Global')
+		sln2005.sections(wks)
+		p.pop('EndGlobal')
+		p.w()
 	end
 
 
@@ -67,13 +76,13 @@
 -- in the IDE will cause the orderings to get rewritten.
 --
 
-	function sln2005.reorderProjects(sln)
-		if sln.startproject then
+	function sln2005.reorderProjects(wks)
+		if wks.startproject then
 			local np
-			local tr = solution.grouptree(sln)
+			local tr = p.workspace.grouptree(wks)
 			tree.traverse(tr, {
 				onleaf = function(n)
-					if n.project.name == sln.startproject then
+					if n.project.name == wks.startproject then
 						np = n
 					end
 				end
@@ -94,15 +103,15 @@
 -- Write out the list of projects and groups contained by the solution.
 --
 
-	function sln2005.projects(sln)
-		local tr = solution.grouptree(sln)
+	function sln2005.projects(wks)
+		local tr = p.workspace.grouptree(wks)
 		tree.traverse(tr, {
 			onleaf = function(n)
 				local prj = n.project
 
 				-- Build a relative path from the solution file to the project file
 				local prjpath = vstudio.projectfile(prj)
-				prjpath = vstudio.path(prj.solution, prjpath)
+				prjpath = vstudio.path(prj.workspace, prjpath)
 
 				-- Unlike projects, solutions must use old-school %...% DOS style
 				-- for environment variables.
@@ -126,7 +135,7 @@
 --
 
 	function sln2005.projectdependencies(prj)
-		local deps = project.getdependencies(prj)
+		local deps = project.getdependencies(prj, 'dependOnly')
 		if #deps > 0 then
 			_p(1,'ProjectSection(ProjectDependencies) = postProject')
 			for _, dep in ipairs(deps) do
@@ -138,15 +147,71 @@
 
 
 --
+-- Write out the list of project configuration platforms.
+--
+
+	sln2005.elements.projectConfigurationPlatforms = function(cfg, context)
+		return {
+			sln2005.activeCfg,
+			sln2005.build0,
+		}
+	end
+
+
+	function sln2005.projectConfigurationPlatforms(wks, sorted, descriptors)
+		p.w("GlobalSection(ProjectConfigurationPlatforms) = postSolution")
+		local tr = p.workspace.grouptree(wks)
+		tree.traverse(tr, {
+			onleaf = function(n)
+				local prj = n.project
+				table.foreachi(sorted, function(cfg)
+					local context = {}
+					-- Look up the matching project configuration. If none exist, this
+					-- configuration has been excluded from the project, and should map
+					-- to closest available project configuration instead.
+					context.prj = prj
+					context.prjCfg = project.getconfig(prj, cfg.buildcfg, cfg.platform)
+					context.excluded = (context.prjCfg == nil or context.prjCfg.flags.ExcludeFromBuild)
+
+					if context.prjCfg == nil then
+						context.prjCfg = project.findClosestMatch(prj, cfg.buildcfg, cfg.platform)
+					end
+
+					context.descriptor = descriptors[cfg]
+					context.platform = vstudio.projectPlatform(context.prjCfg)
+					context.architecture = vstudio.archFromConfig(context.prjCfg, true)
+
+					p.push()
+					p.callArray(sln2005.elements.projectConfigurationPlatforms, cfg, context)
+					p.pop()
+				end)
+			end
+		})
+		p.w("EndGlobalSection")
+	end
+
+
+	function sln2005.activeCfg(cfg, context)
+		p.w('{%s}.%s.ActiveCfg = %s|%s', context.prj.uuid, context.descriptor, context.platform, context.architecture)
+	end
+
+
+	function sln2005.build0(cfg, context)
+		if not context.excluded and context.prjCfg.kind ~= premake.NONE then
+			p.w('{%s}.%s.Build.0 = %s|%s', context.prj.uuid, context.descriptor, context.platform, context.architecture)
+		end
+	end
+
+--
 -- Write out the tables that map solution configurations to project configurations.
 --
 
-	function sln2005.configurationPlatforms(sln)
+	function sln2005.configurationPlatforms(wks)
 
 		local descriptors = {}
 		local sorted = {}
 
-		for cfg in solution.eachconfig(sln) do
+		for cfg in p.workspace.eachconfig(wks) do
 
 			-- Create a Visual Studio solution descriptor (i.e. Debug|Win32) for
 			-- this solution configuration. I need to use it in a few different places
@@ -171,10 +236,10 @@
 		-- Now I can output the sorted list of solution configuration descriptors
 
 		-- Visual Studio assumes the first configurations as the defaults.
-		if sln.defaultplatform then
+		if wks.defaultplatform then
 			_p(1,'GlobalSection(SolutionConfigurationPlatforms) = preSolution')
 			table.foreachi(sorted, function (cfg)
-				if cfg.platform == sln.defaultplatform then
+				if cfg.platform == wks.defaultplatform then
 					_p(2,'%s = %s', descriptors[cfg], descriptors[cfg])
 				end
 			end)
@@ -183,55 +248,14 @@
 
 		_p(1,'GlobalSection(SolutionConfigurationPlatforms) = preSolution')
 		table.foreachi(sorted, function (cfg)
-			if not sln.defaultplatform or cfg.platform ~= sln.defaultplatform then
+			if not wks.defaultplatform or cfg.platform ~= wks.defaultplatform then
 				_p(2,'%s = %s', descriptors[cfg], descriptors[cfg])
 			end
 		end)
 		_p(1,"EndGlobalSection")
 
 		-- For each project in the solution...
-
-		_p(1,"GlobalSection(ProjectConfigurationPlatforms) = postSolution")
-
-		local tr = solution.grouptree(sln)
-		tree.traverse(tr, {
-			onleaf = function(n)
-				local prj = n.project
-
-				-- For each (sorted) configuration in the solution...
-
-				table.foreachi(sorted, function (cfg)
-
-					local platform, architecture
-
-					-- Look up the matching project configuration. If none exist, this
-					-- configuration has been excluded from the project, and should map
-					-- to closest available project configuration instead.
-
-					local prjCfg = project.getconfig(prj, cfg.buildcfg, cfg.platform)
-					local excluded = (prjCfg == nil or prjCfg.flags.ExcludeFromBuild)
-
-					if prjCfg == nil then
-						prjCfg = project.findClosestMatch(prj, cfg.buildcfg, cfg.platform)
-					end
-
-					local descriptor = descriptors[cfg]
-					local platform = vstudio.projectPlatform(prjCfg)
-					local architecture = vstudio.archFromConfig(prjCfg, true)
-
-					_p(2,'{%s}.%s.ActiveCfg = %s|%s', prj.uuid, descriptor, platform, architecture)
-
-					-- Only output Build.0 entries for buildable configurations
-
-					if not excluded and prjCfg.kind ~= premake.NONE then
-						_p(2,'{%s}.%s.Build.0 = %s|%s', prj.uuid, descriptor, platform, architecture)
-					end
-
-				end)
-			end
-		})
-		_p(1,"EndGlobalSection")
-
+		sln2005.projectConfigurationPlatforms(wks, sorted, descriptors)
 	end
 
 
@@ -240,7 +264,7 @@
 -- Write out contents of the SolutionProperties section; currently unused.
 --
 
-	function sln2005.properties(sln)
+	function sln2005.properties(wks)
 		_p('\tGlobalSection(SolutionProperties) = preSolution')
 		_p('\t\tHideSolutionNode = FALSE')
 		_p('\tEndGlobalSection')
@@ -252,8 +276,8 @@
 -- any solution groups.
 --
 
-	function sln2005.NestedProjects(sln)
-		local tr = solution.grouptree(sln)
+	function sln2005.NestedProjects(wks)
+		local tr = p.workspace.grouptree(wks)
 		if tree.hasbranches(tr) then
 			_p(1,'GlobalSection(NestedProjects) = preSolution')
 			tree.traverse(tr, {
@@ -273,21 +297,19 @@
 -- be ignored.
 --
 
-	sln2005.sectionmap = {
-		ConfigurationPlatforms = sln2005.configurationPlatforms,
-		SolutionProperties     = sln2005.properties,
-		NestedProjects         = sln2005.NestedProjects
-	}
+	sln2005.elements.sections = function(wks)
+		return {
+			sln2005.configurationPlatforms,
+			sln2005.properties,
+			sln2005.NestedProjects
+		}
+	end
 
 
 --
--- Write out all of the solution sections.
+-- Write out all of the workspace sections.
 --
 
-	function sln2005.sections(sln)
-		for _, section in ipairs(sln2005.solutionSections(sln)) do
-			if sln2005.sectionmap[section] then
-				sln2005.sectionmap[section](sln)
-			end
-		end
+	function sln2005.sections(wks)
+		p.callArray(sln2005.elements.sections, wks)
 	end
