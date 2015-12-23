@@ -44,7 +44,6 @@
 		trigger = "test",
 		description = "Run the automated test suite",
 		execute = function ()
-			print (corePath, "scripts/test.lua")
 			include (path.join(corePath, "scripts/test.lua"))
 		end
 	}
