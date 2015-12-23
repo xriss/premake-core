@@ -24,7 +24,11 @@ _WORKING_DIR		=lfs.currentdir()
 _ARGV=arg
 
 --hack, probably linux only for now to get started
-_BASE_SCRIPT_DIR=lfs.currentdir() .. "/" .. string.match(arg[0],"(.*/)") .. "/../../"
+if arg[0]:sub(1,1) == "/" then -- absolute path
+	_BASE_SCRIPT_DIR=string.match(arg[0],"(.*/)") .. "/../../"
+else
+	_BASE_SCRIPT_DIR=lfs.currentdir() .. "/" .. string.match(arg[0],"(.*/)") .. "/../../"
+end
 _BASE_SCRIPT_DIR=string.gsub(_BASE_SCRIPT_DIR,"//","/")
 
 -- fake command as the dir part is used in later search patha
