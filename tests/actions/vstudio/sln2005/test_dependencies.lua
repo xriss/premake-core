@@ -4,8 +4,7 @@
 -- Copyright (c) 2009-2012 Jason Perkins and the Premake project
 --
 
-	T.vstudio_sln2005_dependencies = { }
-	local suite = T.vstudio_sln2005_dependencies
+	local suite = test.declare("vstudio_sln2005_dependencies")
 	local sln2005 = premake.vstudio.sln2005
 
 
@@ -16,7 +15,7 @@
 	local wks, prj1, prj2
 
 	function suite.setup()
-		_ACTION = "vs2005"
+		premake.action.set("vs2005")
 		wks, prj1 = test.createWorkspace()
 		uuid "AE61726D-187C-E440-BD07-2556188A6565"
 		prj2 = test.createproject(wks)
@@ -44,9 +43,9 @@
 	function suite.dependency_onCppProjects()
 		prepare("C++")
 		test.capture [[
-	ProjectSection(ProjectDependencies) = postProject
-		{2151E83B-997F-4A9D-955D-380157E88C31} = {2151E83B-997F-4A9D-955D-380157E88C31}
-	EndProjectSection
+ProjectSection(ProjectDependencies) = postProject
+	{2151E83B-997F-4A9D-955D-380157E88C31} = {2151E83B-997F-4A9D-955D-380157E88C31}
+EndProjectSection
 		]]
 	end
 
@@ -58,9 +57,9 @@
 	function suite.dependency_onCSharpProjects()
 		prepare("C#")
 		test.capture [[
-	ProjectSection(ProjectDependencies) = postProject
-		{2151E83B-997F-4A9D-955D-380157E88C31} = {2151E83B-997F-4A9D-955D-380157E88C31}
-	EndProjectSection
+ProjectSection(ProjectDependencies) = postProject
+	{2151E83B-997F-4A9D-955D-380157E88C31} = {2151E83B-997F-4A9D-955D-380157E88C31}
+EndProjectSection
 		]]
 	end
 
@@ -71,12 +70,12 @@
 --
 
 	function suite.dependency_onCSharpProjectsVs2010()
-		_ACTION = "vs2010"
+		premake.action.set("vs2010")
 		prepare("C#")
 		test.capture [[
-	ProjectSection(ProjectDependencies) = postProject
-		{2151E83B-997F-4A9D-955D-380157E88C31} = {2151E83B-997F-4A9D-955D-380157E88C31}
-	EndProjectSection
+ProjectSection(ProjectDependencies) = postProject
+	{2151E83B-997F-4A9D-955D-380157E88C31} = {2151E83B-997F-4A9D-955D-380157E88C31}
+EndProjectSection
 		]]
 	end
 
@@ -87,11 +86,11 @@
 --
 
 	function suite.dependency_onCSharpProjectsVs2012()
-		_ACTION = "vs2012"
+		premake.action.set("vs2012")
 		prepare("C#")
 		test.capture [[
-	ProjectSection(ProjectDependencies) = postProject
-		{2151E83B-997F-4A9D-955D-380157E88C31} = {2151E83B-997F-4A9D-955D-380157E88C31}
-	EndProjectSection
+ProjectSection(ProjectDependencies) = postProject
+	{2151E83B-997F-4A9D-955D-380157E88C31} = {2151E83B-997F-4A9D-955D-380157E88C31}
+EndProjectSection
 		]]
 	end

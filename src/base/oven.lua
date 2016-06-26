@@ -43,7 +43,13 @@
 ---
 
 	function oven.bake()
-		p.container.bakeChildren(p.api.rootContainer())
+		-- reset the root _isBaked state.
+		-- this really only affects the unit-tests, since that is the only place
+		-- where multiple bakes per 'exe run' happen.
+		local root = p.api.rootContainer()
+		root._isBaked = false;
+
+		p.container.bake(root)
 	end
 
 	function oven.bakeWorkspace(wks)
@@ -53,16 +59,7 @@
 	p.alias(oven, "bakeWorkspace", "bakeSolution")
 
 
-
----
--- Bakes a specific workspace object.
----
-
-	function p.workspace.bake(self)
-		-- Add filtering terms to the context and then compile the results. These
-		-- terms describe the "operating environment"; only results contained by
-		-- configuration blocks which match these terms will be returned.
-
+	local function addCommonContextFilters(self)
 		context.addFilter(self, "_ACTION", _ACTION)
 		context.addFilter(self, "action", _ACTION)
 
@@ -70,7 +67,6 @@
 		context.addFilter(self, "system", self.system)
 
 		-- Add command line options to the filtering options
-
 		local options = {}
 		for key, value in pairs(_OPTIONS) do
 			local term = key
@@ -81,6 +77,18 @@
 		end
 		context.addFilter(self, "_OPTIONS", options)
 		context.addFilter(self, "options", options)
+	end
+
+---
+-- Bakes a specific workspace object.
+---
+
+	function p.workspace.bake(self)
+		-- Add filtering terms to the context and then compile the results. These
+		-- terms describe the "operating environment"; only results contained by
+		-- configuration blocks which match these terms will be returned.
+
+		addCommonContextFilters(self)
 
 		-- Set up my token expansion environment
 
@@ -116,9 +124,12 @@
 	end
 
 
-
 	function p.project.bake(self)
+		verbosef('    Baking %s...', self.name)
+
 		self.solution = self.workspace
+		self.global = self.workspace.global
+
 		local wks = self.workspace
 
 		-- Add filtering terms to the context to make it as specific as I can.
@@ -209,11 +220,34 @@
 	end
 
 
+	function p.rule.bake(self)
+		-- Add filtering terms to the context and then compile the results. These
+		-- terms describe the "operating environment"; only results contained by
+		-- configuration blocks which match these terms will be returned.
 
-	function p.rule.bake(r)
-		table.sort(r.propertydefinition, function (a, b)
+		addCommonContextFilters(self)
+
+		-- Populate the token expansion environment
+
+		self.environ = {
+			rule = self,
+		}
+
+		-- Go ahead and distill all of that down now; this is my new rule object
+
+		context.compile(self)
+
+		-- sort the propertydefinition table.
+		table.sort(self.propertydefinition, function (a, b)
 			return a.name < b.name
 		end)
+
+		-- Set the context's base directory to the rule's file system
+		-- location. Any path tokens which are expanded in non-path fields
+		-- are made relative to this, ensuring a portable generated rule.
+
+		self.location = self.location or self.basedir
+		context.basedir(self, self.location)
 	end
 
 
@@ -432,10 +466,12 @@
 
 		local system = p.action.current().os or os.get()
 		local architecture = nil
+		local toolset = nil
 
 		if platform then
 			system = p.api.checkValue(p.fields.system, platform) or system
 			architecture = p.api.checkValue(p.fields.architecture, platform) or architecture
+			toolset = p.api.checkValue(p.fields.toolset, platform) or toolset
 		end
 
 		-- Wrap the projects's configuration set (which contains all of the information
@@ -454,6 +490,7 @@
 		ctx.project = prj
 		ctx.workspace = wks
 		ctx.solution = wks
+		ctx.global = wks.global
 		ctx.buildcfg = buildcfg
 		ctx.platform = platform
 		ctx.action = _ACTION
@@ -484,6 +521,10 @@
 		-- allow the project script to override the default architecture
 		ctx.architecture = ctx.architecture or architecture
 		context.addFilter(ctx, "architecture", ctx.architecture)
+
+		-- allow the project script to override the default toolset
+		ctx.toolset = ctx.toolset or toolset
+		context.addFilter(ctx, "toolset", ctx.toolset)
 
 		-- if a kind is set, allow that to influence the configuration
 		context.addFilter(ctx, "kind", ctx.kind)

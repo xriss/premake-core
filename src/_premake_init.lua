@@ -78,6 +78,12 @@
 	}
 
 	api.register {
+		name = "buildcustomizations",
+		scope = "project",
+		kind = "list:string",
+	}
+
+	api.register {
 		name = "builddependencies",
 		scope = { "rule" },
 		kind = "list:string",
@@ -483,7 +489,7 @@
 			"SEH",                 -- DEPRECATED
 			"ShadowedVariables",
 			"StaticRuntime",
-			"Symbols",
+			"Symbols",             -- DEPRECATED
 			"UndefinedIdentifiers",
 			"Unicode",             -- DEPRECATED
 			"Unsafe",              -- DEPRECATED
@@ -683,6 +689,13 @@
 	}
 
 	api.register {
+		name = "frameworkdirs",
+		scope = "config",
+		kind = "list:directory",
+		tokens = true,
+	}
+
+	api.register {
 		name = "linkoptions",
 		scope = "config",
 		kind = "list:string",
@@ -694,6 +707,16 @@
 		scope = "config",
 		kind = "list:mixed",
 		tokens = true,
+	}
+
+	api.register {
+		name = "linkgroups",
+		scope = "config",
+		kind = "string",
+		allowed = {
+			"Off",
+			"On",
+		}
 	}
 
 	api.register {
@@ -733,6 +756,13 @@
 			"On",
 			"Off",
 		}
+	}
+
+	api.register {
+		name = "nuget",
+		scope = "project",
+		kind = "list:string",
+		tokens = true,
 	}
 
 	api.register {
@@ -916,6 +946,24 @@
 	}
 
 	api.register {
+		name = "symbols",
+		scope = "config",
+		kind = "string",
+		allowed = {
+			"Default",
+			"On",
+			"Off",
+		},
+	}
+
+	api.register {
+		name = "symbolspath",
+		scope = "config",
+		kind = "path",
+		tokens = true,
+	}
+
+	api.register {
 		name = "sysincludedirs",
 		scope = "config",
 		kind = "list:directory",
@@ -944,6 +992,12 @@
 			"windows",
 			"xbox360",
 		},
+	}
+
+	api.register {
+		name = "systemversion",
+		scope = "project",
+		kind = "string",
 	}
 
 	api.register {
@@ -1074,6 +1128,12 @@
 	api.register {
 		name = "largeaddressaware",
 		scope = "config",
+		kind = "boolean",
+	}
+
+	api.register {
+		name = "editorintegration",
+		scope = "workspace",
 		kind = "boolean",
 	}
 
@@ -1233,7 +1293,7 @@
 		exceptionhandling "Default"
 	end)
 
-	api.deprecateValue("flags", "Unsafe", nil,
+	api.deprecateValue("flags", "Unsafe", 'Use `clr "Unsafe"` instead',
 	function(value)
 		clr "Unsafe"
 	end,
@@ -1243,12 +1303,22 @@
 
 	-- 18 Dec 2015
 
-	api.deprecateValue("flags", "Unicode", nil,
+	api.deprecateValue("flags", "Unicode", 'Use `characterset "Unicode"` instead',
 	function(value)
 		characterset "Unicode"
 	end,
 	function(value)
 		characterset "Default"
+	end)
+
+	-- 21 June 2016
+
+	api.deprecateValue("flags", "Symbols", 'Use `symbols "On"` instead',
+	function(value)
+		symbols "On"
+	end,
+	function(value)
+		symbols "Default"
 	end)
 
 
@@ -1358,7 +1428,9 @@
 --
 -----------------------------------------------------------------------------
 
+	characterset "Default"
 	clr "Off"
+	editorintegration "Off"
 	exceptionhandling "Default"
 	rtti "Default"
 

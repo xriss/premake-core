@@ -552,6 +552,7 @@
 				m.generateDebugInformation,
 				m.programDatabaseFile,
 				m.subSystem,
+				m.largeAddressAware,
 				m.optimizeReferences,
 				m.enableCOMDATFolding,
 				m.entryPointSymbol,
@@ -748,7 +749,7 @@
 --
 
 	function m.symbols(cfg)
-		if not cfg.flags.Symbols then
+		if not (cfg.symbols == p.ON) then
 			return 0
 		elseif cfg.debugformat == "c7" then
 			return 1
@@ -1087,6 +1088,14 @@
 	function m.enableCOMDATFolding(cfg, toolset)
 		if config.isOptimizedBuild(cfg) and not toolset then
 			p.w('EnableCOMDATFolding="2"')
+		end
+	end
+
+
+
+	function m.largeAddressAware(cfg)
+		if (cfg.largeaddressaware == true) then
+			p.w('LargeAddressAware="2"')
 		end
 	end
 

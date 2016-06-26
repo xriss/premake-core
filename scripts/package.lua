@@ -54,7 +54,7 @@
 --
 
 	os.chdir("..")
-	local text = os.outputof(string.format('git show %s:src/host/premake.c', branch))
+	local text = os.outputof(string.format('git show %s:src/host/premake.h', branch))
 	local _, _, version = text:find('VERSION%s*"([%w%p]+)"')
 
 	local pkgName = "premake-" .. version
@@ -111,7 +111,11 @@
 --
 
 	print("Updating embedded scripts...")
-	z = execQuiet("premake5 embed")
+	if kind == "source" then
+		z = execQuiet("premake5 embed")
+	else
+		z = execQuiet("premake5 --bytecode embed")
+	end
 	if z ~= 0 then
 		error("failed to update the embedded scripts", 0)
 	end

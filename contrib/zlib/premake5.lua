@@ -1,22 +1,17 @@
 project "zlib-lib"
 	language    "C"
 	kind        "StaticLib"
-	defines {"N_FSEEKO", "_CRT_SECURE_NO_DEPRECATE"}
-	flags   { "StaticRuntime" }
-	location    "build"
+	defines     { "N_FSEEKO" }
+	warnings    "off"
 
-	files 
+	files
 	{
 		"**.h",
 		"**.c"
 	}
 
-	configuration "windows"
-		defines {"_WINDOWS"}
+	filter "system:windows"
+		defines { "_WINDOWS" }
 
-	configuration "Release"
-		defines {"NDEBUG"}
-		flags   { "OptimizeSize" }
-
-	configuration "Debug"
-		defines {"_DEBUG"}		flags   { "Symbols" }
+	filter "system:not windows"
+		defines { 'HAVE_UNISTD_H' }
