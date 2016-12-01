@@ -171,3 +171,18 @@ path.normalize=function(a)
 	
 	return n
 end
+
+
+path.wildcards=function(s)
+
+-- escape
+	local r=s
+
+	r=r:gsub("([%+%.%-%^%$%(%)%%])",function(a) return "%"..a end)
+	r=r:gsub("(%*+)",function(a) if a=="**" then return "[^/]*" end return ".*" end)
+
+--	print("FUNCTION","path."..debug.getinfo(1).name,s,r)
+	
+	return s
+	
+end
