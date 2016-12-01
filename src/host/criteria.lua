@@ -31,6 +31,28 @@ criteria._compile=function(input)
 end
 
 
+local compare=function(str,word)
+
+	if word[4] then
+		return str==str:match(word[1])
+	else
+		return str==word[1]
+	end
+	
+end
+
+local compare_all -- recursive compare
+
+compare_all=function(val,word)
+	if type(val)=="table" then -- recurse
+		for i=1,#val do v=val[i]
+			if compare_all(v,word) then return true end
+		end
+		return false
+	end	
+	return cmp(tostring(val),word)
+end
+
 criteria.matches=function(patterns, context)
 
 --	print("FUNCTION","criteria."..debug.getinfo(1).name,patterns,context)
@@ -39,9 +61,22 @@ criteria.matches=function(patterns, context)
 	local matched=false
 
 
-	for ip=1,#patterns do local pattern=patterns[ip]
-		for iw=1,#pattern do local word=pattern[iw]
+	for ip=1,#patterns do local pattern=patterns[ip] -- all patterns
+
+		for iw=1,#pattern do local word=pattern[iw] -- must match any word
+
+			if word[2] then -- prefix ( look in a context.table recursively )
+				matched=compare_all( context[ word[2] ] , word )
+			else -- no prefix, check entire context recursively
+				matched=compare_all( context , word )
+			end
+
+			if matched then break end -- found a word
+
 		end
+		
+		if not matched then break end -- give up as that pattern failed
+		
 	end
 
 
