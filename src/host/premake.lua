@@ -88,6 +88,9 @@ dofile( _BASE_SCRIPT_DIR .. "src/host/debug.lua" )
 dofile( _BASE_SCRIPT_DIR .. "src/host/path.lua" )
 dofile( _BASE_SCRIPT_DIR .. "src/host/os.lua" )
 dofile( _BASE_SCRIPT_DIR .. "src/host/string.lua" )
+dofile( _BASE_SCRIPT_DIR .. "src/host/buffered.lua" )
+dofile( _BASE_SCRIPT_DIR .. "src/host/http.lua" )
+dofile( _BASE_SCRIPT_DIR .. "src/host/zip.lua" )
 
 local _dofile=dofile
 dofile=function(n)
