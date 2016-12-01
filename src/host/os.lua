@@ -24,7 +24,7 @@ os.matchstart=function(p)
 	
 	it.p=p
 	it.pd,it.pf=path._splitpath(p)
-	it.dir_func,it.dir_data=lfs.dir(it.pd)
+	pcall( function() it.dir_func,it.dir_data=lfs.dir(it.pd) end )
 
 -- very very simple glob hack, any other special character will messup
 	it.pf=it.pf:gsub("%.","%.")
@@ -40,14 +40,16 @@ os.matchdone=function()end
 os.matchnext=function(it)
 --	print("FUNCTION","os."..debug.getinfo(1).name,it)
 	
-	it.filename=it.dir_func(it.dir_data)
+	if not it.dir_func then return nil end -- no dir
 	
 	while true do
+		it.filename=it.dir_func(it.dir_data)
 
 		if not it.filename then return nil end -- end
 
-		if it.filename:match(it.pf) then return true end -- a match
-	
+		if it.filename~="." and it.filename~=".." then 
+			if it.filename:match(it.pf) then return true end -- a match
+		end
 	end
 	
 end
